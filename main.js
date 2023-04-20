@@ -47,6 +47,26 @@ app.get('/api/drive/:name', async (req, res) => {
     res.status(404).send('No such file or directory');
 })
 
+app.post('/api/drive', async (req, res) => {
+    // Fetch data from request
+    const name = req.query.name;
+    // Get path for new directory
+    const path = os.tmpdir() + `/${name}`;
+    try {
+        // Check if directory name is valid
+        if (validateName(name)) {
+            // Create new directory
+            await fs.promises.mkdir(path);
+            res.status(201).send(`New directory ${name} created`);
+            return;
+        }
+        // Return error if name is invalid
+        res.status(400).send('Invalid name input');
+    } catch (err) {
+        console.error(err);
+    }
+})
+
 
 // METHODS //
 
@@ -66,4 +86,10 @@ const readDirectory = async (path) => {
             }
         }
     });
+}
+
+const validateName = (name) => {
+    // Regex to check directory name
+    const regex = new RegExp(/^[a-z0-9_]+$/i);
+    return regex.test(name);
 }
