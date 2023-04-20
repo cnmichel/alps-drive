@@ -1,6 +1,7 @@
 const app = require("./server");
 const fs = require('node:fs');
 const os = require('node:os');
+const p = require('node:path');
 
 
 // API ROUTES //
@@ -24,7 +25,7 @@ app.get('/api/drive/:name', async (req, res) => {
     // Fetch data from request
     const name = req.params.name;
     // Get the path of the directory or filename
-    const path = os.tmpdir() + `/${name}`;
+    const path = p.join(os.tmpdir(), name);
     try {
         // Fetch directory content
         if (fs.lstatSync(path).isDirectory()) {
@@ -51,7 +52,7 @@ app.post('/api/drive', async (req, res) => {
     // Fetch data from request
     const name = req.query.name;
     // Get path for new directory
-    const path = os.tmpdir() + `/${name}`;
+    const path = p.join(os.tmpdir(), name);
     try {
         // Check if directory name is valid
         if (validateName(name)) {
@@ -72,8 +73,8 @@ app.post('/api/drive/:folder', async (req, res) => {
     const folder = req.params.folder;
     const name = req.query.name;
     // Get path for directories
-    const dirPath = os.tmpdir() + `/${folder}`;
-    const path = os.tmpdir() + `/${folder}/${name}`;
+    const dirPath = p.join(os.tmpdir(), folder);
+    const path = p.join(os.tmpdir(), folder, name);
     try {
         // Check if current directory exist
         if (fs.existsSync(dirPath)) {
@@ -96,7 +97,7 @@ app.delete('/api/drive/:name', async (req, res) => {
     // Fetch data from request
     const name = req.params.name;
     // Get path for directory or file
-    const path = os.tmpdir() + `/${name}`;
+    const path = p.join(os.tmpdir(), name);
     try {
         // Check if directory or file name is valid
         if (validateName(name)) {
@@ -117,8 +118,8 @@ app.delete('/api/drive/:folder/:name', async (req, res) => {
     const folder = req.params.folder;
     const name = req.params.name;
     // Get path for directory or file
-    const dirPath = os.tmpdir() + `/${folder}`;
-    const path = os.tmpdir() + `/${folder}/${name}`;
+    const dirPath = p.join(os.tmpdir(), folder);
+    const path = p.join(os.tmpdir(), folder, name);
     try {
         // Check if current directory exist
         if (fs.existsSync(dirPath)) {
@@ -152,7 +153,7 @@ const readDirectory = async (path) => {
             return {
                 name: item.name,
                 isFolder: item.isDirectory(),
-                size: fs.statSync(path + `/${item.name}`).size
+                size: fs.statSync(p.join(path, item.name)).size
             }
         }
     });
