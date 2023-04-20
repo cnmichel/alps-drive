@@ -138,6 +138,27 @@ app.delete('/api/drive/:folder/:name', async (req, res) => {
     }
 })
 
+app.put('/api/drive', async (req, res) => {
+    // Fetch data from request
+    const files = req.files;
+    try {
+        // Check if file exist in request
+        if (Object.keys(files).length > 0) {
+            const {file: {file, filename}} = files;
+            // Get path for new file
+            const path = p.join(os.tmpdir(), filename);
+            // Create file in directory
+            await fs.promises.copyFile(file, path);
+            res.status(201).send(`${filename} uploaded with success`);
+            return;
+        }
+        // Return error if no file in request
+        res.status(400).send('No file to upload');
+    } catch (err) {
+        console.error(err);
+    }
+})
+
 
 // METHODS //
 
