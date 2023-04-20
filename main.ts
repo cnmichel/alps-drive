@@ -1,19 +1,24 @@
-const app = require("./server");
-const fs = require('node:fs');
-const os = require('node:os');
-const p = require('node:path');
+import app from './server';
+import { existsSync, lstatSync, promises, statSync, Dirent } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
+const rootDir = tmpdir();
+
+export interface File {
+    name: string,
+    isFolder: boolean,
+    size?: number
+}
 
 // API ROUTES //
 
-app.get('/api/drive', async (req, res) => {
+app.get('/api/drive', async (req: any, res: any) => {
     // Set the header content type
     res.setHeader("Content-Type", "application/json");
-    // Get the path of the system temp directory
-    const path = os.tmpdir();
     try {
         // Fetching data
-        const data = await readDirectory(path);
+        const data: File[] = await readDirectory(rootDir);
         // Send response with data
         res.status(200).json(data);
     } catch (err) {
@@ -21,24 +26,24 @@ app.get('/api/drive', async (req, res) => {
     }
 })
 
-app.get('/api/drive/:name', async (req, res) => {
+app.get('/api/drive/:name', async (req: any, res: any) => {
     // Fetch data from request
-    const name = req.params.name;
+    const name: string = req.params.name;
     // Get the path of the directory or filename
-    const path = p.join(os.tmpdir(), name);
+    const path: string = join(rootDir, name);
     try {
         // Fetch directory content
-        if (fs.lstatSync(path).isDirectory()) {
+        if (lstatSync(path).isDirectory()) {
             res.setHeader("Content-Type", "application/json");
-            const data = await readDirectory(path);
+            const data: File[] = await readDirectory(path);
             res.json(data);
             return;
         }
         // Fetch file content
-        if (fs.lstatSync(path).isFile()) {
+        if (lstatSync(path).isFile()) {
             res.setHeader("Content-Type", "application/octet-stream");
             // Read file content
-            const data = await fs.promises.readFile(path, { encoding: 'utf8' });
+            const data: string = await promises.readFile(path, { encoding: 'utf8' });
             res.send(data);
             return;
         }
@@ -48,16 +53,16 @@ app.get('/api/drive/:name', async (req, res) => {
     res.status(404).send('No such file or directory');
 })
 
-app.post('/api/drive', async (req, res) => {
+app.post('/api/drive', async (req: any, res: any) => {
     // Fetch data from request
-    const name = req.query.name;
+    const name: string = req.query.name;
     // Get path for new directory
-    const path = p.join(os.tmpdir(), name);
+    const path: string = join(rootDir, name);
     try {
         // Check if directory name is valid
         if (validateName(name)) {
             // Create new directory
-            await fs.promises.mkdir(path);
+            await promises.mkdir(path);
             res.status(201).send(`New directory ${name} created`);
             return;
         }
@@ -68,18 +73,18 @@ app.post('/api/drive', async (req, res) => {
     }
 })
 
-app.post('/api/drive/:folder', async (req, res) => {
+app.post('/api/drive/:folder', async (req: any, res: any) => {
     // Fetch data from request
     const folder = req.params.folder;
     const name = req.query.name;
     // Get path for directories
-    const dirPath = p.join(os.tmpdir(), folder);
-    const path = p.join(os.tmpdir(), folder, name);
+    const dirPath: string = join(rootDir, folder);
+    const path: string = join(rootDir, folder, name);
     try {
         // Check if current directory exist
-        if (fs.existsSync(dirPath)) {
+        if (existsSync(dirPath)) {
             if (validateName(name)) {
-                await fs.promises.mkdir(path);
+                await promises.mkdir(path);
                 res.status(201).send(`New directory ${name} created with success`);
                 return;
             }
@@ -93,16 +98,16 @@ app.post('/api/drive/:folder', async (req, res) => {
     }
 })
 
-app.delete('/api/drive/:name', async (req, res) => {
+app.delete('/api/drive/:name', async (req: any, res: any) => {
     // Fetch data from request
     const name = req.params.name;
     // Get path for directory or file
-    const path = p.join(os.tmpdir(), name);
+    const path = join(rootDir, name);
     try {
         // Check if directory or file name is valid
         if (validateName(name)) {
             // Delete directory or file
-            await fs.promises.rm(path, {recursive: true});
+            await promises.rm(path, {recursive: true});
             res.status(200).send(`${name} deleted with success`);
             return;
         }
@@ -113,18 +118,18 @@ app.delete('/api/drive/:name', async (req, res) => {
     }
 })
 
-app.delete('/api/drive/:folder/:name', async (req, res) => {
+app.delete('/api/drive/:folder/:name', async (req: any, res: any) => {
     // Fetch data from request
     const folder = req.params.folder;
     const name = req.params.name;
     // Get path for directory or file
-    const dirPath = p.join(os.tmpdir(), folder);
-    const path = p.join(os.tmpdir(), folder, name);
+    const dirPath = join(rootDir, folder);
+    const path = join(rootDir, folder, name);
     try {
         // Check if current directory exist
-        if (fs.existsSync(dirPath)) {
+        if (existsSync(dirPath)) {
             if (validateName(name)) {
-                await fs.promises.rm(path, {recursive: true});
+                await promises.rm(path, {recursive: true});
                 res.status(200).send(`${name} deleted with success`);
                 return;
             }
@@ -138,7 +143,7 @@ app.delete('/api/drive/:folder/:name', async (req, res) => {
     }
 })
 
-app.put('/api/drive', async (req, res) => {
+app.put('/api/drive', async (req: any, res: any) => {
     // Fetch data from request
     const files = req.files;
     try {
@@ -146,9 +151,9 @@ app.put('/api/drive', async (req, res) => {
         if (Object.keys(files).length > 0) {
             const {file: {file, filename}} = files;
             // Get path for new file
-            const path = p.join(os.tmpdir(), filename);
+            const path = join(rootDir, filename);
             // Create file in directory
-            await fs.promises.copyFile(file, path);
+            await promises.copyFile(file, path);
             res.status(201).send(`${filename} uploaded with success`);
             return;
         }
@@ -159,19 +164,19 @@ app.put('/api/drive', async (req, res) => {
     }
 })
 
-app.put('/api/drive/:folder', async (req, res) => {
+app.put('/api/drive/:folder', async (req: any, res: any) => {
     // Fetch data from request
     const folder = req.params.folder;
     const files = req.files;
     // Get path for directory or file
-    const dirPath = p.join(os.tmpdir(), folder);
+    const dirPath = join(rootDir, folder);
     try {
         // Check if current directory exist
-        if (fs.existsSync(dirPath)) {
+        if (existsSync(dirPath)) {
             if (Object.keys(files).length > 0) {
                 const {file: {file, filename}} = files;
-                const path = p.join(os.tmpdir(), folder, filename);
-                await fs.promises.copyFile(file, path);
+                const path = join(rootDir, folder, filename);
+                await promises.copyFile(file, path);
                 res.status(201).send(`${filename} uploaded with success`);
                 return;
             }
@@ -187,9 +192,9 @@ app.put('/api/drive/:folder', async (req, res) => {
 
 // METHODS //
 
-const readDirectory = async (path) => {
-    const items = await fs.promises.readdir(path, {withFileTypes: true});
-    return items.map((item) => {
+const readDirectory = async (path: string): Promise<File[]> => {
+    const items = await promises.readdir(path, {withFileTypes: true});
+    return items.map((item: Dirent) => {
         if (item.isDirectory()) {
             return {
                 name: item.name,
@@ -199,13 +204,13 @@ const readDirectory = async (path) => {
             return {
                 name: item.name,
                 isFolder: item.isDirectory(),
-                size: fs.statSync(p.join(path, item.name)).size
+                size: statSync(join(path, item.name)).size
             }
         }
     });
 }
 
-const validateName = (name) => {
+const validateName = (name: string) => {
     // Regex to check directory name
     const regex = new RegExp(/^[a-z0-9_.]+$/i);
     return regex.test(name);
