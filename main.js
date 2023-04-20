@@ -159,6 +159,31 @@ app.put('/api/drive', async (req, res) => {
     }
 })
 
+app.put('/api/drive/:folder', async (req, res) => {
+    // Fetch data from request
+    const folder = req.params.folder;
+    const files = req.files;
+    // Get path for directory or file
+    const dirPath = p.join(os.tmpdir(), folder);
+    try {
+        // Check if current directory exist
+        if (fs.existsSync(dirPath)) {
+            if (Object.keys(files).length > 0) {
+                const {file: {file, filename}} = files;
+                const path = p.join(os.tmpdir(), folder, filename);
+                await fs.promises.copyFile(file, path);
+                res.status(201).send(`${filename} uploaded with success`);
+                return;
+            }
+            // Return error if no file in request
+            res.status(400).send('No file to upload');
+        }
+        // Return error if directory does not exist
+        res.status(404).send(`Directory ${folder} does not exist`);
+    } catch (err) {
+        console.error(err);
+    }
+})
 
 // METHODS //
 
