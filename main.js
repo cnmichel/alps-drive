@@ -79,13 +79,33 @@ app.post('/api/drive/:folder', async (req, res) => {
         if (fs.existsSync(dirPath)) {
             if (validateName(name)) {
                 await fs.promises.mkdir(path);
-                res.status(201).send(`New directory ${name} created`);
+                res.status(201).send(`New directory ${name} created with success`);
                 return;
             }
             res.status(400).send('Invalid name input');
         }
         // Return error if directory does not exist
         res.status(404).send(`Directory ${folder} does not exist`);
+    } catch (err) {
+        console.error(err);
+    }
+})
+
+app.delete('/api/drive/:name', async (req, res) => {
+    // Fetch data from request
+    const name = req.params.name;
+    // Get path for directory or file
+    const path = os.tmpdir() + `/${name}`;
+    try {
+        // Check if directory or file name is valid
+        if (validateName(name)) {
+            // Delete directory or file
+            await fs.promises.rm(path, {recursive: true});
+            res.status(200).send(`${name} deleted with success`);
+            return;
+        }
+        // Return error if name is invalid
+        res.status(400).send('Invalid directory or file name');
     } catch (err) {
         console.error(err);
     }
@@ -114,6 +134,6 @@ const readDirectory = async (path) => {
 
 const validateName = (name) => {
     // Regex to check directory name
-    const regex = new RegExp(/^[a-z0-9_]+$/i);
+    const regex = new RegExp(/^[a-z0-9_.]+$/i);
     return regex.test(name);
 }
