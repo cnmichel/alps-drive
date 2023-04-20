@@ -83,6 +83,7 @@ app.post('/api/drive/:folder', async (req, res) => {
                 return;
             }
             res.status(400).send('Invalid name input');
+            return;
         }
         // Return error if directory does not exist
         res.status(404).send(`Directory ${folder} does not exist`);
@@ -106,6 +107,31 @@ app.delete('/api/drive/:name', async (req, res) => {
         }
         // Return error if name is invalid
         res.status(400).send('Invalid directory or file name');
+    } catch (err) {
+        console.error(err);
+    }
+})
+
+app.delete('/api/drive/:folder/:name', async (req, res) => {
+    // Fetch data from request
+    const folder = req.params.folder;
+    const name = req.params.name;
+    // Get path for directory or file
+    const dirPath = os.tmpdir() + `/${folder}`;
+    const path = os.tmpdir() + `/${folder}/${name}`;
+    try {
+        // Check if current directory exist
+        if (fs.existsSync(dirPath)) {
+            if (validateName(name)) {
+                await fs.promises.rm(path, {recursive: true});
+                res.status(200).send(`${name} deleted with success`);
+                return;
+            }
+            res.status(400).send('Invalid directory or file name');
+            return;
+        }
+        // Return error if directory does not exist
+        res.status(404).send(`Directory ${folder} does not exist`);
     } catch (err) {
         console.error(err);
     }
