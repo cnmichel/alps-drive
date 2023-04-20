@@ -67,6 +67,30 @@ app.post('/api/drive', async (req, res) => {
     }
 })
 
+app.post('/api/drive/:folder', async (req, res) => {
+    // Fetch data from request
+    const folder = req.params.folder;
+    const name = req.query.name;
+    // Get path for directories
+    const dirPath = os.tmpdir() + `/${folder}`;
+    const path = os.tmpdir() + `/${folder}/${name}`;
+    try {
+        // Check if current directory exist
+        if (fs.existsSync(dirPath)) {
+            if (validateName(name)) {
+                await fs.promises.mkdir(path);
+                res.status(201).send(`New directory ${name} created`);
+                return;
+            }
+            res.status(400).send('Invalid name input');
+        }
+        // Return error if directory does not exist
+        res.status(404).send(`Directory ${folder} does not exist`);
+    } catch (err) {
+        console.error(err);
+    }
+})
+
 
 // METHODS //
 
